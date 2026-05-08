@@ -40,10 +40,10 @@ export function PianoDiagram({ chord, shape, size = 'md' }: Props) {
     );
   }
 
-  const whiteKeys: { pc: number; x: number }[] = [];
+  const whiteKeys: { pc: number; oct: number; x: number }[] = [];
   for (let oct = 0; oct < c.octaves; oct++) {
     WHITE_PCS.forEach((pc, i) => {
-      whiteKeys.push({ pc, x: (oct * 7 + i) * c.whiteW });
+      whiteKeys.push({ pc, oct, x: (oct * 7 + i) * c.whiteW });
     });
   }
 
@@ -96,8 +96,8 @@ export function PianoDiagram({ chord, shape, size = 'md' }: Props) {
 
             {/* White keys */}
             {whiteKeys.map((wk, i) => {
-              const isRoot = wk.pc === shape.rootPc;
-              const active = highlighted.has(wk.pc);
+              const isRoot = wk.oct === 0 && wk.pc === shape.rootPc;
+              const active = wk.oct === 0 && highlighted.has(wk.pc);
               const fill = isRoot ? 'url(#whiteRoot)' : active ? 'url(#whiteActive)' : 'url(#white)';
               return (
                 <Rect
@@ -117,8 +117,8 @@ export function PianoDiagram({ chord, shape, size = 'md' }: Props) {
             {/* Black keys (rendered after whites so they overlay) */}
             {Array.from({ length: c.octaves }).flatMap((_, oct) =>
               BLACK_OFFSETS.map((b) => {
-                const isRoot = b.pc === shape.rootPc;
-                const active = highlighted.has(b.pc);
+                const isRoot = oct === 0 && b.pc === shape.rootPc;
+                const active = oct === 0 && highlighted.has(b.pc);
                 const xCenter = (oct * 7 + b.after + 1) * c.whiteW;
                 const fill = isRoot ? 'url(#blackRoot)' : active ? 'url(#blackActive)' : 'url(#black)';
                 return (
