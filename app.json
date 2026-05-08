@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "psalterio-rn",
+    "name": "Saltério",
     "slug": "psalterio-rn",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -33,12 +33,14 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#0F1115",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#0F1115"
           }
         }
-      ]
+      ],
+      "expo-audio",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
