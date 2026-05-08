@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChordLine } from '@/src/components/ChordLine';
 import { AutoScrollBar } from '@/src/components/song/AutoScrollBar';
@@ -10,9 +11,10 @@ import {
   ChordDetailSheetHandle,
 } from '@/src/components/song/ChordDetailSheet';
 import { ChordDictionary, Instrument } from '@/src/components/song/ChordDictionary';
+import { FontSheet, FontSheetHandle } from '@/src/components/song/FontSheet';
 import { KeySheet, KeySheetHandle } from '@/src/components/song/KeySheet';
 import { ListenSheet, ListenSheetHandle } from '@/src/components/song/ListenSheet';
-import { SongToolbar } from '@/src/components/song/SongToolbar';
+import { SongToolbar, toolbarBottomOffset } from '@/src/components/song/SongToolbar';
 import { getSongById } from '@/src/data/songs';
 import { useFavorites } from '@/src/hooks/useFavorites';
 import { colors, spacing } from '@/src/theme/colors';
@@ -37,6 +39,7 @@ export default function SongScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const songId = parseInt(id ?? '0', 10);
   const song = useMemo(() => getSongById(songId), [songId]);
+  const insets = useSafeAreaInsets();
 
   const [fontSize, setFontSize] = useState(17);
   const [instrument, setInstrument] = useState<Instrument>('guitar');
@@ -104,6 +107,7 @@ export default function SongScreen() {
   const keySheetRef = useRef<KeySheetHandle>(null);
   const listenSheetRef = useRef<ListenSheetHandle>(null);
   const chordDetailRef = useRef<ChordDetailSheetHandle>(null);
+  const fontSheetRef = useRef<FontSheetHandle>(null);
 
   const { isFavorite, toggle } = useFavorites();
 
@@ -136,6 +140,7 @@ export default function SongScreen() {
 
   const onPressKey = useCallback(() => keySheetRef.current?.present(), []);
   const onPressListen = useCallback(() => listenSheetRef.current?.present(), []);
+  const onPressFont = useCallback(() => fontSheetRef.current?.present(), []);
   const onPressAutoScroll = useCallback(() => {
     setAutoScrollOpen((v) => {
       if (v) setAutoScrollPlaying(false);
@@ -215,6 +220,7 @@ export default function SongScreen() {
         visible={autoScrollOpen}
         playing={autoScrollPlaying}
         speed={scrollSpeed}
+        bottomOffset={toolbarBottomOffset(insets.bottom)}
         onTogglePlay={onTogglePlay}
         onSpeedChange={setScrollSpeed}
         onClose={onCloseAutoScroll}
@@ -223,12 +229,11 @@ export default function SongScreen() {
       <SongToolbar
         currentKey={currentKey}
         isOriginalKey={isOriginalKey}
-        fontSize={fontSize}
         autoScrollOpen={autoScrollOpen}
         onPressKey={onPressKey}
         onPressListen={onPressListen}
         onPressAutoScroll={onPressAutoScroll}
-        onChangeFont={onChangeFont}
+        onPressFont={onPressFont}
       />
 
       <KeySheet
@@ -241,6 +246,8 @@ export default function SongScreen() {
       />
 
       <ListenSheet ref={listenSheetRef} songTitle={song.title} />
+
+      <FontSheet ref={fontSheetRef} fontSize={fontSize} onChangeFont={onChangeFont} />
 
       <ChordDetailSheet ref={chordDetailRef} defaultInstrument={instrument} />
     </View>

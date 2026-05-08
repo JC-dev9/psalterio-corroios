@@ -8,6 +8,7 @@ interface Props {
   visible: boolean;
   playing: boolean;
   speed: number;
+  bottomOffset: number;
   onTogglePlay: () => void;
   onSpeedChange: (v: number) => void;
   onClose: () => void;
@@ -17,6 +18,7 @@ export function AutoScrollBar({
   visible,
   playing,
   speed,
+  bottomOffset,
   onTogglePlay,
   onSpeedChange,
   onClose,
@@ -24,7 +26,7 @@ export function AutoScrollBar({
   if (!visible) return null;
 
   return (
-    <View style={styles.wrap} pointerEvents="box-none">
+    <View style={[styles.wrap, { bottom: bottomOffset }]} pointerEvents="box-none">
       <View style={styles.bar}>
         <Pressable
           onPress={onTogglePlay}
@@ -78,7 +80,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 90,
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
   },
