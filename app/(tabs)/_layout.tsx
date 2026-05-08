@@ -1,9 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
+import { useFavorites } from '@/src/hooks/useFavorites';
 import { colors } from '@/src/theme/colors';
 
 export default function TabLayout() {
+  const { favorites } = useFavorites();
+  const favCount = favorites.size;
+
   return (
     <Tabs
       screenOptions={{
@@ -32,6 +36,13 @@ export default function TabLayout() {
         name="favorites"
         options={{
           title: 'Favoritos',
+          tabBarBadge: favCount > 0 ? favCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: colors.primary,
+            color: colors.background,
+            fontSize: 11,
+            fontWeight: '700',
+          },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart" size={size} color={color} />
           ),
