@@ -1,58 +1,63 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '@/src/theme/colors';
+
+export const TOOLBAR_PILL_HEIGHT = 48;
+const TOOLBAR_BOTTOM_MARGIN = 16;
+
+export function toolbarBottomOffset(insetsBottom: number) {
+  return insetsBottom + TOOLBAR_BOTTOM_MARGIN + TOOLBAR_PILL_HEIGHT + spacing.sm;
+}
 
 interface Props {
   currentKey: string;
   isOriginalKey: boolean;
-  fontSize: number;
   autoScrollOpen: boolean;
   onPressKey: () => void;
   onPressListen: () => void;
   onPressAutoScroll: () => void;
-  onChangeFont: (delta: number) => void;
+  onPressFont: () => void;
 }
 
 export function SongToolbar({
   currentKey,
   isOriginalKey,
-  fontSize,
   autoScrollOpen,
   onPressKey,
   onPressListen,
   onPressAutoScroll,
-  onChangeFont,
+  onPressFont,
 }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView edges={['bottom']} style={styles.safe}>
-      <View style={styles.bar}>
+    <View
+      style={[styles.wrap, { bottom: insets.bottom + TOOLBAR_BOTTOM_MARGIN }]}
+      pointerEvents="box-none"
+    >
+      <View style={styles.pill}>
         <ToolbarItem
           icon="key-outline"
           label="Tom"
-          accent={!isOriginalKey}
           badge={currentKey}
+          accent={!isOriginalKey}
           onPress={onPressKey}
         />
+        <View style={styles.divider} />
         <ToolbarItem icon="logo-youtube" label="Ouvir" onPress={onPressListen} />
+        <View style={styles.divider} />
         <ToolbarItem
           icon={autoScrollOpen ? 'pause-circle-outline' : 'play-circle-outline'}
           label="Rolar"
           accent={autoScrollOpen}
           onPress={onPressAutoScroll}
         />
-        <View style={styles.fontGroup}>
-          <Pressable onPress={() => onChangeFont(-1)} hitSlop={6} style={styles.fontBtn}>
-            <Text style={styles.fontBtnLabel}>A−</Text>
-          </Pressable>
-          <Text style={styles.fontVal}>{fontSize}</Text>
-          <Pressable onPress={() => onChangeFont(+1)} hitSlop={6} style={styles.fontBtn}>
-            <Text style={styles.fontBtnLabel}>A+</Text>
-          </Pressable>
-        </View>
+        <View style={styles.divider} />
+        <ToolbarItem icon="text-outline" label="Texto" onPress={onPressFont} />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -71,7 +76,7 @@ function ToolbarItem({ icon, label, badge, accent, onPress }: ItemProps) {
       hitSlop={4}
       style={({ pressed }) => [styles.item, pressed && { opacity: 0.6 }]}
     >
-      <Ionicons name={icon} size={22} color={accent ? colors.primary : colors.text} />
+      <Ionicons name={icon} size={20} color={accent ? colors.primary : colors.text} />
       <Text style={[styles.itemLabel, accent && { color: colors.primary }]}>
         {label}
         {badge ? ` · ${badge}` : ''}
@@ -81,53 +86,43 @@ function ToolbarItem({ icon, label, badge, accent, onPress }: ItemProps) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+  wrap: {
+    position: 'absolute',
+    left: 48,
+    right: 48,
   },
-  bar: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 12,
+    gap: spacing.xs,
+  },
+  divider: {
+    width: 1,
+    height: 20,
+    backgroundColor: colors.border,
   },
   item: {
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    minWidth: 56,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    flex: 1,
   },
   itemLabel: {
     color: colors.text,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-    marginTop: 2,
-  },
-  fontGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.pill,
-    paddingHorizontal: 4,
-    gap: 2,
-  },
-  fontBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-  },
-  fontBtnLabel: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  fontVal: {
-    color: colors.textMuted,
-    fontSize: 11,
-    minWidth: 18,
-    textAlign: 'center',
+    marginTop: 1,
   },
 });
