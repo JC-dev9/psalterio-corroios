@@ -1,98 +1,112 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { SongListItem } from '@/src/components/SongListItem';
+import { loadSongs } from '@/src/data/songs';
+import { useFavorites } from '@/src/hooks/useFavorites';
+import { colors, radius, spacing } from '@/src/theme/colors';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
+  const songs = useMemo(() => loadSongs(), []);
+  const [query, setQuery] = useState('');
+  const { isFavorite, toggle } = useFavorites();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return songs;
+    return songs.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        String(s.number).includes(q),
+    );
+  }, [songs, query]);
+
+  return (
+    <SafeAreaView edges={['bottom']} style={styles.container}>
+      <View style={styles.searchWrap}>
+        <Ionicons name="search" size={18} color={colors.textMuted} />
+        <TextInput
+          style={styles.search}
+          placeholder="Buscar por título ou número..."
+          placeholderTextColor={colors.textMuted}
+          value={query}
+          onChangeText={setQuery}
+          autoCorrect={false}
+        />
+        {query.length > 0 ? (
+          <Ionicons
+            name="close-circle"
+            size={18}
+            color={colors.textMuted}
+            onPress={() => setQuery('')}
+          />
+        ) : null}
+      </View>
+
+      <Text style={styles.sectionLabel}>HINÁRIO COMPLETO · {filtered.length} hinos</Text>
+
+      <FlatList
+        data={filtered}
+        keyExtractor={(s) => String(s.id)}
+        contentContainerStyle={styles.list}
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item }) => (
+          <SongListItem
+            song={item}
+            isFavorite={isFavorite(item.id)}
+            onPress={() => router.push(`/song/${item.id}`)}
+            onToggleFavorite={() => toggle(item.id)}
+          />
+        )}
+        ListEmptyComponent={
+          <Text style={styles.empty}>Nenhuma música encontrada.</Text>
+        }
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    height: 44,
+    gap: spacing.sm,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  search: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  sectionLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginTop: spacing.lg,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  list: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  empty: {
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.xl,
   },
 });
