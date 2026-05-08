@@ -9,7 +9,7 @@ import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'r
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '@/src/theme/colors';
-import { KEYS, noteIndex, semitonesBetween } from '@/src/utils/chord-transposer';
+import { KEYS, semitonesBetween } from '@/src/utils/chord-transposer';
 
 interface Props {
   originalKey: string;
