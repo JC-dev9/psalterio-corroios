@@ -119,8 +119,8 @@ export const KeySheet = forwardRef<KeySheetHandle, Props>(function KeySheet(
           {rows.map((row, rIdx) => (
             <View key={rIdx} style={styles.gridRow}>
               {row.map((k) => {
-                const active = noteIndex(k) === noteIndex(currentKey);
-                const isOrig = noteIndex(k) === noteIndex(originalKey);
+                const active = k === currentKey;
+                const isOrig = k === originalKey;
                 return (
                   <Pressable
                     key={k}
