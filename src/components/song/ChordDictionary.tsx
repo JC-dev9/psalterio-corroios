@@ -1,0 +1,140 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { GuitarDiagram } from '@/src/components/song/diagrams/GuitarDiagram';
+import { PianoDiagram } from '@/src/components/song/diagrams/PianoDiagram';
+import { getGuitarShape, getPianoShape } from '@/src/data/chord-shapes';
+import { colors, radius, spacing } from '@/src/theme/colors';
+
+export type Instrument = 'guitar' | 'piano';
+
+interface Props {
+  chords: string[];
+  instrument: Instrument;
+  onChangeInstrument: (i: Instrument) => void;
+  onPressChord: (chord: string) => void;
+}
+
+export function ChordDictionary({ chords, instrument, onChangeInstrument, onPressChord }: Props) {
+  return (
+    <View style={styles.wrap}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Acordes</Text>
+        <View style={styles.toggle}>
+          <ToggleBtn
+            icon="guitar-acoustic"
+            label="Violão"
+            active={instrument === 'guitar'}
+            onPress={() => onChangeInstrument('guitar')}
+          />
+          <ToggleBtn
+            icon="piano"
+            label="Teclado"
+            active={instrument === 'piano'}
+            onPress={() => onChangeInstrument('piano')}
+          />
+        </View>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+      >
+        {chords.map((chord) => (
+          <Pressable
+            key={chord}
+            onPress={() => onPressChord(chord)}
+            style={({ pressed }) => [styles.card, pressed && { opacity: 0.7 }]}
+          >
+            {instrument === 'guitar' ? (
+              <GuitarDiagram chord={chord} shape={getGuitarShape(chord)} size="sm" />
+            ) : (
+              <PianoDiagram chord={chord} shape={getPianoShape(chord)} size="sm" />
+            )}
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+interface ToggleBtnProps {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}
+
+function ToggleBtn({ icon, label, active, onPress }: ToggleBtnProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.toggleBtn,
+        active && styles.toggleBtnActive,
+        pressed && { opacity: 0.8 },
+      ]}
+    >
+      <MaterialCommunityIcons
+        name={icon}
+        size={15}
+        color={active ? colors.background : colors.text}
+      />
+      <Text style={[styles.toggleLabel, active && styles.toggleLabelActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  toggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    padding: 3,
+    gap: 2,
+  },
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    gap: 4,
+  },
+  toggleBtnActive: { backgroundColor: colors.primary },
+  toggleLabel: { color: colors.text, fontSize: 12, fontWeight: '600' },
+  toggleLabelActive: { color: colors.background },
+  scroll: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+});
