@@ -1,24 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
+import { memo, useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '@/src/theme/colors';
 import { Song } from '@/src/types/song';
 
+export const ROW_HEIGHT = 76;
+
 interface Props {
   song: Song;
+  numberLabel?: string;
   isFavorite: boolean;
-  onPress: () => void;
-  onToggleFavorite: () => void;
+  onPress: (id: number) => void;
+  onToggleFavorite: (id: number) => void;
 }
 
-export function SongListItem({ song, isFavorite, onPress, onToggleFavorite }: Props) {
+function SongListItemBase({ song, numberLabel, isFavorite, onPress, onToggleFavorite }: Props) {
+  const handlePress = useCallback(() => onPress(song.id), [onPress, song.id]);
+  const handleHeart = useCallback(() => onToggleFavorite(song.id), [onToggleFavorite, song.id]);
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
+      android_ripple={{ color: colors.surfaceElevated }}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <View style={styles.numberBox}>
-        <Text style={styles.number}>{String(song.number).padStart(2, '0')}</Text>
+        <Text style={styles.number}>{numberLabel ?? String(song.number).padStart(2, '0')}</Text>
       </View>
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={1}>
@@ -30,7 +38,7 @@ export function SongListItem({ song, isFavorite, onPress, onToggleFavorite }: Pr
           </Text>
         ) : null}
       </View>
-      <Pressable hitSlop={12} onPress={onToggleFavorite} style={styles.heart}>
+      <Pressable hitSlop={12} onPress={handleHeart} style={styles.heart}>
         <Ionicons
           name={isFavorite ? 'heart' : 'heart-outline'}
           size={22}
@@ -41,13 +49,15 @@ export function SongListItem({ song, isFavorite, onPress, onToggleFavorite }: Pr
   );
 }
 
+export const SongListItem = memo(SongListItemBase);
+
 const styles = StyleSheet.create({
   row: {
+    height: ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.sm,
   },
