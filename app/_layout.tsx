@@ -5,7 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { loadSongs } from '@/src/data/songs';
+import { hydrateFavorites } from '@/src/hooks/useFavorites';
 import { colors } from '@/src/theme/colors';
+
+// Warm caches off the critical render path.
+loadSongs();
+hydrateFavorites();
 
 const navTheme = {
   ...DarkTheme,
