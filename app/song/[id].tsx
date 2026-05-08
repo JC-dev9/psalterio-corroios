@@ -41,8 +41,17 @@ export default function SongScreen() {
   const [fontSize, setFontSize] = useState(17);
   const [instrument, setInstrument] = useState<Instrument>('guitar');
 
-  // Transposition: original key + currently selected key
-  const originalKey = useMemo(() => (song ? detectOriginalKey(song.content) : 'C'), [song]);
+  // Pre-split content + base chord set. These only depend on the song.
+  const lines = useMemo(() => (song ? song.content.split('\n') : []), [song]);
+  const baseChords = useMemo(
+    () => (song ? extractUniqueChords(song.content) : []),
+    [song],
+  );
+  const originalKey = useMemo(
+    () => (song ? detectOriginalKey(song.content) : 'C'),
+    [song],
+  );
+
   const [currentKey, setCurrentKey] = useState(originalKey);
   useEffect(() => setCurrentKey(originalKey), [originalKey]);
 
@@ -52,16 +61,14 @@ export default function SongScreen() {
   );
   const isOriginalKey = transposeSemitones === 0;
 
-  // Chords list (transposed) for the dictionary
   const uniqueChords = useMemo(() => {
-    if (!song) return [];
     const useFlats = preferFlats(currentKey);
     const set = new Set<string>();
-    extractUniqueChords(song.content).forEach((c) => {
+    baseChords.forEach((c) => {
       set.add(transposeChord(c, transposeSemitones, useFlats ? 'F' : currentKey));
     });
     return Array.from(set);
-  }, [song, transposeSemitones, currentKey]);
+  }, [baseChords, transposeSemitones, currentKey]);
 
   // Auto-scroll
   const [autoScrollOpen, setAutoScrollOpen] = useState(false);
@@ -100,13 +107,16 @@ export default function SongScreen() {
 
   const { isFavorite, toggle } = useFavorites();
 
+  // Stable handler so memoized ChordLines don't re-render when other state changes.
+  const onChordPress = useCallback((c: string) => {
+    chordDetailRef.current?.present(c);
+  }, []);
+
   const onShiftSemitone = useCallback(
     (delta: number) => {
       const idx = noteIndex(currentKey);
       const newIdx = ((idx + delta) % 12 + 12) % 12;
-      // Choose representation based on flat/sharp preference of the previous key
       const useFlats = preferFlats(currentKey);
-      // Find the KEY label that matches noteIndex and respects the preference
       const candidates = KEYS.filter((k) => noteIndex(k) === newIdx);
       const next =
         candidates.find((k) => (useFlats ? k.endsWith('b') || !k.includes('#') : !k.endsWith('b'))) ??
@@ -116,6 +126,35 @@ export default function SongScreen() {
     [currentKey],
   );
 
+  const onScroll = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
+    offset.current = e.nativeEvent.contentOffset.y;
+  }, []);
+
+  const onChangeFont = useCallback((delta: number) => {
+    setFontSize((s) => Math.min(MAX_FONT, Math.max(MIN_FONT, s + delta)));
+  }, []);
+
+  const onPressKey = useCallback(() => keySheetRef.current?.present(), []);
+  const onPressListen = useCallback(() => listenSheetRef.current?.present(), []);
+  const onPressAutoScroll = useCallback(() => {
+    setAutoScrollOpen((v) => {
+      if (v) setAutoScrollPlaying(false);
+      return !v;
+    });
+  }, []);
+  const onTogglePlay = useCallback(() => setAutoScrollPlaying((v) => !v), []);
+  const onCloseAutoScroll = useCallback(() => {
+    setAutoScrollPlaying(false);
+    setAutoScrollOpen(false);
+  }, []);
+  const onRestoreKey = useCallback(() => setCurrentKey(originalKey), [originalKey]);
+
+  const fav = song ? isFavorite(song.id) : false;
+  const songIdSafe = song?.id;
+  const onToggleFav = useCallback(() => {
+    if (songIdSafe != null) toggle(songIdSafe);
+  }, [songIdSafe, toggle]);
+
   if (!song) {
     return (
       <View style={styles.container}>
@@ -124,16 +163,13 @@ export default function SongScreen() {
     );
   }
 
-  const lines = song.content.split('\n');
-  const fav = isFavorite(song.id);
-
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
           title: `${String(song.number).padStart(2, '0')}. ${song.title}`,
           headerRight: () => (
-            <Pressable hitSlop={12} onPress={() => toggle(song.id)}>
+            <Pressable hitSlop={12} onPress={onToggleFav}>
               <Ionicons
                 name={fav ? 'heart' : 'heart-outline'}
                 size={22}
@@ -147,17 +183,16 @@ export default function SongScreen() {
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.content}
-        onScroll={(e) => {
-          offset.current = e.nativeEvent.contentOffset.y;
-        }}
-        scrollEventThrottle={16}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
         stickyHeaderIndices={[0]}
+        removeClippedSubviews
       >
         <ChordDictionary
           chords={uniqueChords}
           instrument={instrument}
           onChangeInstrument={setInstrument}
-          onPressChord={(c) => chordDetailRef.current?.present(c)}
+          onPressChord={onChordPress}
         />
 
         <View style={styles.lyricsWrap}>
@@ -169,7 +204,7 @@ export default function SongScreen() {
               fontSize={fontSize}
               transpose={transposeSemitones}
               targetKey={currentKey}
-              onChordPress={(c) => chordDetailRef.current?.present(c)}
+              onChordPress={onChordPress}
             />
           ))}
           <View style={{ height: 120 }} />
@@ -180,12 +215,9 @@ export default function SongScreen() {
         visible={autoScrollOpen}
         playing={autoScrollPlaying}
         speed={scrollSpeed}
-        onTogglePlay={() => setAutoScrollPlaying((v) => !v)}
+        onTogglePlay={onTogglePlay}
         onSpeedChange={setScrollSpeed}
-        onClose={() => {
-          setAutoScrollPlaying(false);
-          setAutoScrollOpen(false);
-        }}
+        onClose={onCloseAutoScroll}
       />
 
       <SongToolbar
@@ -193,17 +225,10 @@ export default function SongScreen() {
         isOriginalKey={isOriginalKey}
         fontSize={fontSize}
         autoScrollOpen={autoScrollOpen}
-        onPressKey={() => keySheetRef.current?.present()}
-        onPressListen={() => listenSheetRef.current?.present()}
-        onPressAutoScroll={() => {
-          setAutoScrollOpen((v) => {
-            if (v) setAutoScrollPlaying(false);
-            return !v;
-          });
-        }}
-        onChangeFont={(delta) =>
-          setFontSize((s) => Math.min(MAX_FONT, Math.max(MIN_FONT, s + delta)))
-        }
+        onPressKey={onPressKey}
+        onPressListen={onPressListen}
+        onPressAutoScroll={onPressAutoScroll}
+        onChangeFont={onChangeFont}
       />
 
       <KeySheet
@@ -212,7 +237,7 @@ export default function SongScreen() {
         currentKey={currentKey}
         onSelectKey={setCurrentKey}
         onShiftSemitone={onShiftSemitone}
-        onRestore={() => setCurrentKey(originalKey)}
+        onRestore={onRestoreKey}
       />
 
       <ListenSheet ref={listenSheetRef} songTitle={song.title} />
