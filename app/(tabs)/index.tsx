@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, ListRenderItem, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { SongListItem } from '@/src/components/SongListItem';
-import { loadSongs } from '@/src/data/songs';
+import { ROW_HEIGHT, SongListItem } from '@/src/components/SongListItem';
+import { IndexedSong, loadSongs, searchTerm } from '@/src/data/songs';
 import { useFavorites } from '@/src/hooks/useFavorites';
 import { colors, radius, spacing } from '@/src/theme/colors';
+
+const ITEM_STRIDE = ROW_HEIGHT + spacing.sm;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -16,14 +18,37 @@ export default function HomeScreen() {
   const { isFavorite, toggle } = useFavorites();
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = searchTerm(query);
     if (!q) return songs;
-    return songs.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        String(s.number).includes(q),
-    );
+    return songs.filter((s) => s.searchIndex.includes(q));
   }, [songs, query]);
+
+  const openSong = useCallback(
+    (id: number) => router.push(`/song/${id}`),
+    [router],
+  );
+
+  const renderItem = useCallback<ListRenderItem<IndexedSong>>(
+    ({ item }) => (
+      <SongListItem
+        song={item}
+        numberLabel={item.numberLabel}
+        isFavorite={isFavorite(item.id)}
+        onPress={openSong}
+        onToggleFavorite={toggle}
+      />
+    ),
+    [isFavorite, openSong, toggle],
+  );
+
+  const getItemLayout = useCallback(
+    (_: ArrayLike<IndexedSong> | null | undefined, index: number) => ({
+      length: ITEM_STRIDE,
+      offset: ITEM_STRIDE * index,
+      index,
+    }),
+    [],
+  );
 
   return (
     <SafeAreaView edges={['bottom']} style={styles.container}>
@@ -31,11 +56,15 @@ export default function HomeScreen() {
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <TextInput
           style={styles.search}
-          placeholder="Buscar por título ou número..."
+          placeholder="Buscar por título, autor ou número…"
           placeholderTextColor={colors.textMuted}
           value={query}
           onChangeText={setQuery}
           autoCorrect={false}
+          autoCapitalize="none"
+          returnKeyType="search"
+          inputMode="search"
+          clearButtonMode="while-editing"
         />
         {query.length > 0 ? (
           <Ionicons
@@ -47,27 +76,40 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
-      <Text style={styles.sectionLabel}>HINÁRIO COMPLETO · {filtered.length} hinos</Text>
+      <Text style={styles.sectionLabel}>
+        {query
+          ? `RESULTADOS · ${filtered.length} ${filtered.length === 1 ? 'hino' : 'hinos'}`
+          : `HINÁRIO COMPLETO · ${songs.length} hinos`}
+      </Text>
 
       <FlatList
         data={filtered}
-        keyExtractor={(s) => String(s.id)}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <SongListItem
-            song={item}
-            isFavorite={isFavorite(item.id)}
-            onPress={() => router.push(`/song/${item.id}`)}
-            onToggleFavorite={() => toggle(item.id)}
-          />
-        )}
+        keyboardDismissMode="on-drag"
+        renderItem={renderItem}
+        getItemLayout={getItemLayout}
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={9}
+        removeClippedSubviews
         ListEmptyComponent={
-          <Text style={styles.empty}>Nenhuma música encontrada.</Text>
+          <View style={styles.emptyWrap}>
+            <Ionicons name="search-outline" size={28} color={colors.textDim} />
+            <Text style={styles.emptyTitle}>Nenhum hino encontrado</Text>
+            <Text style={styles.emptyHint}>
+              Tenta outro título, autor ou número.
+            </Text>
+          </View>
         }
       />
     </SafeAreaView>
   );
+}
+
+function keyExtractor(s: IndexedSong) {
+  return String(s.id);
 }
 
 const styles = StyleSheet.create({
@@ -104,9 +146,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
   },
-  empty: {
+  emptyWrap: {
+    alignItems: 'center',
+    paddingTop: spacing.xxl,
+    gap: spacing.sm,
+  },
+  emptyTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptyHint: {
     color: colors.textMuted,
+    fontSize: 13,
     textAlign: 'center',
-    marginTop: spacing.xl,
   },
 });
