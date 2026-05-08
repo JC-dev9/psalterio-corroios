@@ -15,7 +15,19 @@ export function normalizeChord(raw: string): string {
     .trim();
 }
 
+const parseCache = new Map<string, Segment[]>();
+const PARSE_CACHE_LIMIT = 4096;
+
 export function parseLine(line: string): Segment[] {
+  const cached = parseCache.get(line);
+  if (cached) return cached;
+  const result = parseLineImpl(line);
+  if (parseCache.size >= PARSE_CACHE_LIMIT) parseCache.clear();
+  parseCache.set(line, result);
+  return result;
+}
+
+function parseLineImpl(line: string): Segment[] {
   const regex = /\[(.*?)\]/g;
   const matches: { chord: string; start: number; end: number }[] = [];
   let m: RegExpExecArray | null;

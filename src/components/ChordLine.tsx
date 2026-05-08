@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Segment, parseLine } from '@/src/utils/chord-parser';
@@ -12,7 +13,7 @@ interface Props {
   onChordPress?: (chord: string) => void;
 }
 
-export function ChordLine({ line, fontSize, transpose, targetKey, onChordPress }: Props) {
+function ChordLineBase({ line, fontSize, transpose, targetKey, onChordPress }: Props) {
   if (line.trim() === '') {
     return <View style={{ height: fontSize * 0.8 }} />;
   }
@@ -132,6 +133,8 @@ function ChordChip({ chord, fontSize, height, onPress, standalone }: ChipProps) 
     </Pressable>
   );
 }
+
+export const ChordLine = memo(ChordLineBase);
 
 const styles = StyleSheet.create({
   row: {
