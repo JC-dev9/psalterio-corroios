@@ -17,6 +17,7 @@ import { ListenSheet, ListenSheetHandle } from '@/src/components/song/ListenShee
 import { SongToolbar, toolbarBottomOffset } from '@/src/components/song/SongToolbar';
 import { getSongById } from '@/src/data/songs';
 import { useFavorites } from '@/src/hooks/useFavorites';
+import { useFontSize } from '@/src/hooks/useFontSize';
 import { colors, spacing } from '@/src/theme/colors';
 import {
   detectOriginalKey,
@@ -28,9 +29,6 @@ import {
   transposeChord,
 } from '@/src/utils/chord-transposer';
 
-const MIN_FONT = 12;
-const MAX_FONT = 28;
-
 // Auto-scroll: speed range tuned so 0 ≈ 0.3 px/frame, 1 ≈ 4 px/frame.
 const MIN_PX_PER_FRAME = 0.3;
 const MAX_PX_PER_FRAME = 4;
@@ -41,7 +39,7 @@ export default function SongScreen() {
   const song = useMemo(() => getSongById(songId), [songId]);
   const insets = useSafeAreaInsets();
 
-  const [fontSize, setFontSize] = useState(17);
+  const { fontSize, changeFont } = useFontSize();
   const [instrument, setInstrument] = useState<Instrument>('guitar');
 
   // Pre-split content + base chord set. These only depend on the song.
@@ -135,8 +133,8 @@ export default function SongScreen() {
   }, []);
 
   const onChangeFont = useCallback((delta: number) => {
-    setFontSize((s) => Math.min(MAX_FONT, Math.max(MIN_FONT, s + delta)));
-  }, []);
+    changeFont(delta);
+  }, [changeFont]);
 
   const onPressKey = useCallback(() => keySheetRef.current?.present(), []);
   const onPressListen = useCallback(() => listenSheetRef.current?.present(), []);
