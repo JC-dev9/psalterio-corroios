@@ -1,9 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LayoutAnimation, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { GuitarDiagram } from '@/src/components/song/diagrams/GuitarDiagram';
 import { PianoDiagram } from '@/src/components/song/diagrams/PianoDiagram';
 import { getGuitarShape, getPianoShape } from '@/src/data/chord-shapes';
+import { useChordDictionaryCollapsed } from '@/src/hooks/useChordDictionaryCollapsed';
 import { colors, radius, spacing } from '@/src/theme/colors';
 
 export type Instrument = 'guitar' | 'piano';
@@ -16,11 +17,30 @@ interface Props {
 }
 
 export function ChordDictionary({ chords, instrument, onChangeInstrument, onPressChord }: Props) {
+  const { collapsed, toggle } = useChordDictionaryCollapsed();
+
+  function handleToggle() {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    toggle();
+  }
+
   return (
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Acordes</Text>
-        <View style={styles.toggle}>
+        <Pressable onPress={handleToggle} style={styles.titleRow} hitSlop={8}>
+          <MaterialCommunityIcons
+            name={collapsed ? 'chevron-right' : 'chevron-down'}
+            size={18}
+            color={colors.textMuted}
+          />
+          <Text style={styles.title}>
+            Acordes
+            {collapsed ? (
+              <Text style={styles.badge}> · {chords.length}</Text>
+            ) : null}
+          </Text>
+        </Pressable>
+        <View style={[styles.toggle, collapsed && styles.toggleFaded]}>
           <ToggleBtn
             icon="guitar-acoustic"
             label="Violão"
@@ -36,25 +56,27 @@ export function ChordDictionary({ chords, instrument, onChangeInstrument, onPres
         </View>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-      >
-        {chords.map((chord) => (
-          <Pressable
-            key={chord}
-            onPress={() => onPressChord(chord)}
-            style={({ pressed }) => [styles.card, pressed && { opacity: 0.7 }]}
-          >
-            {instrument === 'guitar' ? (
-              <GuitarDiagram chord={chord} shape={getGuitarShape(chord)} size="sm" />
-            ) : (
-              <PianoDiagram chord={chord} shape={getPianoShape(chord)} size="sm" />
-            )}
-          </Pressable>
-        ))}
-      </ScrollView>
+      {!collapsed && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
+        >
+          {chords.map((chord) => (
+            <Pressable
+              key={chord}
+              onPress={() => onPressChord(chord)}
+              style={({ pressed }) => [styles.card, pressed && { opacity: 0.7 }]}
+            >
+              {instrument === 'guitar' ? (
+                <GuitarDiagram chord={chord} shape={getGuitarShape(chord)} size="sm" />
+              ) : (
+                <PianoDiagram chord={chord} shape={getPianoShape(chord)} size="sm" />
+              )}
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -101,12 +123,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.sm,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   title: {
     color: colors.text,
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
+  badge: {
+    color: colors.textMuted,
+    fontWeight: '400',
+    letterSpacing: 0,
+  },
+  toggleFaded: { opacity: 0.4 },
   toggle: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
